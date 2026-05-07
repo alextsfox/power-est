@@ -1,0 +1,14 @@
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.vscode/
+.venv/
+**.xlsm
+**.png
+**.ipynb
+**.csv
