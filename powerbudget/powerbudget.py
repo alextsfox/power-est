@@ -65,9 +65,20 @@ def fetch_daymet(lat, lon, start_year, end_year):
         lon=lon, lat=lat,
         start_year=start_year, end_year=end_year,
     )
+
+    idx, yday = dat.index, dat["yday"]
+
+    # downsample to 7d, which is the approximate length of time we usually care about for storm-reserve simulations.
+    # it would be unrealistic to simulate a storm that had record-low insolation for every single day of a 14-day storm.
+    # more likely is that 7-day insolation will be at a record low, which is more insolation than record low insolation for 14 days straight.
+    dat = dat.resample("7d").mean().reindex(idx).interpolate(method="pchip")
+    dat["yday"] = yday
+
     mean_srad    = dat.groupby("yday")["srad"].mean()
-    low_srad     = dat.groupby("yday")["srad"].quantile(0.25)
     lowest_srad  = dat.groupby("yday")["srad"].min()
+
+    low_srad     = dat.groupby("yday")["srad"].quantile(0.25)
+
     min_temp_C   = dat.groupby("yday")["tmin"].mean()
     min_temp_C = (dat.groupby("yday")["tmin"].mean() + dat.groupby("yday")["tmax"].mean()) / 2
     sunlight_sec = dat.groupby("yday")["dayl"].mean()
@@ -381,11 +392,11 @@ def main(cfg: BudgetConfig = CONFIG):
     # Panel 2 — daily energy: panel vs load (polar)
     ax2 = fig.add_subplot(gs[0, 1], projection="polar")
     ax2.plot(theta_closed, np.append(mean_solar_wh.values, mean_solar_wh.values[0]),
-             color="orange", label="Supply (Mean Insolation Scenario)")
+             color="orange", label="Solar Power Generated (Mean Insolation Scenario)")
     ax2.fill_between(theta_closed,
                      np.append(low_solar_wh.values, low_solar_wh.values[0]),
                      np.append(mean_solar_wh.values, mean_solar_wh.values[0]),
-                     alpha=0.3, color="orange", label="Supply (25th Percentile Insolation Scenario)")
+                     alpha=0.3, color="orange", label="Solar Power Generated (25th Percentile Insolation Scenario)")
     # ax2.plot(theta_closed, np.append(low_solar_wh.values, low_solar_wh.values[0]),
     #          color="orange", linestyle="--", label="Supply (25th Percentile Insolation Scenario)")
     ax2.axhline(daily_load_wh, color="C2", linestyle="-",
