@@ -33,6 +33,7 @@ class BudgetConfig:
     # ── Required hardware parameters ─────────────────────────────────────────
     battery_ah:        float           # amp-hour capacity
     panel_watts:       float           # rated Pmax at STC (1000 W/m², 25 °C)
+    panel_v_mp:        float           # voltage at max power (Vmp)
     scan_interval_sec: float           # period between scans (s)
 
     altitude:  float = 0.0     # metres above sea level
@@ -103,6 +104,7 @@ CONFIG = BudgetConfig(
     # charge_efficiency =   0.90,
 
     panel_watts      = 45 * 2,
+    panel_v_mp       = 33.4,
     # panel_efficiency =  0.90,
 
     # backup_days       = 14,

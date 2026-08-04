@@ -124,7 +124,7 @@ def panel_orientation_factor(cfg: BudgetConfig) -> pd.Series:
         factors[doy] = tilted_power / flat_power
     return pd.Series(factors, index=range(1, 366))
 
-def panel_daily_wh(panel_watts: float, panel_efficiency: float, srad: pd.Series, dayl: pd.Series, temp: pd.Series, cfg: BudgetConfig) -> pd.Series:
+def panel_daily_wh(p_nom: float, v_mp: float, panel_efficiency: float, srad: pd.Series, dayl: pd.Series, temp: pd.Series, cfg: BudgetConfig) -> pd.Series:
     """
     Estimate daily energy output (Wh) from the panel for each day of year.
 
@@ -137,10 +137,15 @@ def panel_daily_wh(panel_watts: float, panel_efficiency: float, srad: pd.Series,
 
     # 0.4% loss per degree C above 25C
     temp_derating = ((temp - 25.0) * 0.004).clip(lower=0)
+
+    # Panel watts is given by the diode equation
+    n = 1.15  # diode ideality factor
+    Vt = 1.381e-23 * (temp + 273.15) / 1.602e-19  # thermal voltage = kT/q
     return (
-        panel_watts  # W kW_solar-1 m2
+        p_nom  # W kW_solar-1 m2
         * (panel_efficiency - temp_derating)  # -
-        * (srad / 1000.0)  # kW_solar m-2
+        * (srad / 1000.0)  # current derating
+        * (1 + n*Vt/v_mp * np.log(srad/1000.0))  # voltage derating
         * (dayl / 3600.0)  # h sunlight day-1
     )  # Wh day-1
 
@@ -258,9 +263,9 @@ def main(cfg: BudgetConfig = CONFIG):
     )
 
     # ── 3. Solar energy ───────────────────────────────────────────────────────
-    mean_solar_wh = panel_daily_wh(cfg.panel_watts, cfg.panel_efficiency,
+    mean_solar_wh = panel_daily_wh(cfg.panel_watts, cfg.panel_v_mp, cfg.panel_efficiency,
                                    mean_srad, sunlight_sec, min_temp_C, cfg)
-    low_solar_wh  = panel_daily_wh(cfg.panel_watts, cfg.panel_efficiency,
+    low_solar_wh  = panel_daily_wh(cfg.panel_watts, cfg.panel_v_mp, cfg.panel_efficiency,
                                    low_srad,  sunlight_sec, min_temp_C, cfg)
     annual_solar  = float(mean_solar_wh.sum())
     annual_load   = daily_load_wh * 365
