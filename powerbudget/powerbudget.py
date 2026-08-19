@@ -48,7 +48,6 @@ def compute_daily_load(devices: dict[str, Device], scan_interval_sec: float, com
     total_wh = sum(breakdown.values())
     return total_wh, breakdown
 
-
 def fetch_daymet(lat, lon, start_year, end_year):
     """
     Pull Daymet daily data and return day-of-year aggregates:
@@ -106,6 +105,7 @@ def auto_orient_panel(cfg: BudgetConfig) -> tuple[float, float]:
             elev += 15.0
     elev = max(0.0, min(90.0, elev))
     return azimuth, elev
+
 def panel_orientation_factor(cfg: BudgetConfig) -> pd.Series:
     """Since daymet gives insolation on a horizontal surface, compute a factor to adjust insolation onto the panel based on its orientation."""
     azimuth, elev = auto_orient_panel(cfg)
@@ -250,7 +250,7 @@ def simulate_storm(daily_load_wh: float, battery_wh: float, max_dod: float,
 # ─────────────────────────────────────────────────────────────────────────────
 
 def main(cfg: BudgetConfig = CONFIG):
-    battery_wh = cfg.battery_voltage * cfg.battery_ah
+    battery_wh = cfg.V_batt * cfg.battery_ah
 
     # ── 1. Device load ────────────────────────────────────────────────────────
     daily_load_wh, breakdown = compute_daily_load(
@@ -259,11 +259,11 @@ def main(cfg: BudgetConfig = CONFIG):
 
     print("\n=== Device Load Breakdown ===")
     for name, wh in breakdown.items():
-        ah = wh / cfg.battery_voltage
+        ah = wh / cfg.V_batt
         print(f"  {name:<22} {wh:7.3f} Wh/day  ({ah:.3f} Ah/day)")
     print(f"  {'─'*50}")
     print(f"  {'TOTAL':<22} {daily_load_wh:7.3f} Wh/day  "
-          f"({daily_load_wh/cfg.battery_voltage:.3f} Ah/day @ {cfg.battery_voltage} V)")
+          f"({daily_load_wh/cfg.V_batt:.3f} Ah/day @ {cfg.V_batt} V)")
     print(f"\n  Scan interval:  {cfg.scan_interval_sec/60:.0f} min  "
           f"│  Comms interval: {cfg.comms_interval_sec/60:.0f} min")
 
@@ -274,15 +274,15 @@ def main(cfg: BudgetConfig = CONFIG):
     )
 
     # ── 3. Solar energy ───────────────────────────────────────────────────────
-    mean_solar_wh = panel_daily_wh(cfg.panel_watts, cfg.panel_v_mp, cfg.panel_efficiency,
+    mean_solar_wh = panel_daily_wh(cfg.P_max, cfg.V_mp, cfg.panel_efficiency,
                                    mean_srad, sunlight_sec, min_temp_C, cfg)
-    low_solar_wh  = panel_daily_wh(cfg.panel_watts, cfg.panel_v_mp, cfg.panel_efficiency,
+    low_solar_wh  = panel_daily_wh(cfg.P_max, cfg.V_mp, cfg.panel_efficiency,
                                    low_srad,  sunlight_sec, min_temp_C, cfg)
     annual_solar  = float(mean_solar_wh.sum())
     annual_load   = daily_load_wh * 365
 
     print("\n=== Annual Energy Balance ===")
-    print(f"  Panel rated output:   {cfg.panel_watts:.1f} W  "
+    print(f"  Panel rated output:   {cfg.P_max:.1f} W  "
           f"(efficiency derating: {cfg.panel_efficiency*100:.0f}%)")
     azimuth, elev = auto_orient_panel(cfg)
     print(f"  Panel orientation:    {elev:.1f}° elevation, {azimuth:.1f}° azimuth", end="")
@@ -308,7 +308,7 @@ def main(cfg: BudgetConfig = CONFIG):
     autonomy   = usable_wh / daily_load_wh   # days with no solar
 
     print("\n=== Battery & Temperature ===")
-    print(f"  Battery:              {cfg.battery_ah:.1f} Ah @ {cfg.battery_voltage} V  "
+    print(f"  Battery:              {cfg.battery_ah:.1f} Ah @ {cfg.V_batt} V  "
           f"= {battery_wh:.0f} Wh total")
     print(f"  Usable ({cfg.max_dod*100:.0f}% DoD):      {usable_ah:.1f} Ah  "
           f"= {usable_wh:.0f} Wh")
@@ -356,7 +356,7 @@ def main(cfg: BudgetConfig = CONFIG):
     fig = plt.figure(figsize=(20, 10))
     fig.suptitle(
         f"Solar Power Budget  │  Lat {cfg.latitude}°  Lon {cfg.longitude}°  │  "
-        f"{cfg.panel_watts} W panel  │  {cfg.battery_ah} Ah @ {cfg.battery_voltage} V battery",
+        f"{cfg.P_max} W panel  │  {cfg.battery_ah} Ah @ {cfg.V_batt} V battery",
         fontsize=12, fontweight="bold",
     )
     gs = gridspec.GridSpec(2, 4, figure=fig, hspace=0.50, wspace=0.40)

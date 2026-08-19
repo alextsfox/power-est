@@ -173,11 +173,11 @@ def _cfg_from_args(args: argparse.Namespace) -> BudgetConfig:
     if args.comms_interval is not None: cfg.comms_interval_sec = args.comms_interval
 
     if args.battery_ah        is not None: cfg.battery_ah        = args.battery_ah
-    if args.battery_voltage   is not None: cfg.battery_voltage   = args.battery_voltage
+    if args.battery_voltage   is not None: cfg.V_batt   = args.battery_voltage
     if args.max_dod           is not None: cfg.max_dod           = args.max_dod
     if args.charge_efficiency is not None: cfg.charge_efficiency = args.charge_efficiency
 
-    if args.panel_watts      is not None: cfg.panel_watts      = args.panel_watts
+    if args.panel_watts      is not None: cfg.P_max      = args.panel_watts
     if args.panel_efficiency is not None: cfg.panel_efficiency = args.panel_efficiency
 
     if args.backup_days   is not None: cfg.backup_days       = args.backup_days

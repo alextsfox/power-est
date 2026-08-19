@@ -50,7 +50,7 @@ cfg = BudgetConfig(
     comms_interval_sec = 3600,
 
     battery_ah        = 125*3,
-    battery_voltage   =  12.0,
+    V_batt   =  12.0,
     max_dod           =   0.8,
 
     # # CURRENT CP SYSTEM
@@ -83,8 +83,8 @@ cfg = BudgetConfig(
     # total derating 
     panel_efficiency =  0.71,  
 
-    panel_watts      = 270*2,
-    panel_v_mp       = 33.4,
+    P_max      = 270*2,
+    V_mp       = 33.4,
     backup_days       = 14,
     daymet_start_year = 2005,
     daymet_end_year   = 2025,
